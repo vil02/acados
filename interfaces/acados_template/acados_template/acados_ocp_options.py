@@ -1014,8 +1014,28 @@ class AcadosOcpOptions:
         To warm start also the first QP, set nlp_solver_warm_start_first_qp.
         Also see nlp_solver_warm_start_first_qp_from_nlp.
 
-        What warm/hot start means in detail is dependend on the QP solver being used.
-        0: no warm start; 1: warm start; 2: hot start.
+        0: no warm start; 1: warm start; 2: hot start; 3: very hot start
+
+        What warm/hot start means in detail depends on the QP solver being used.
+
+        For HPIPM:
+        - 0: primal variables set to 0, equality multipliers pi set to 0; for inequalities: t, lam set according to t0_init option.
+        - 1: primal guess is kept, equality multipliers pi set to 0; for inequalities: t, lam set according to t0_init option. NOTE: this is the same as 0, as acados resets the initial guess of primal variables to zero, as QPs have primal variables in delta space.
+        - 2: t and lam are clipped with 0.1 from below, otherwise QP initialization is exactly what is in qp_out before
+        - 3: QP initialization is exactly what is in qp_out before
+
+        For DAQP and qpOASES, as common in active-set solver literature.
+        - 0: cold
+        - 1: warm
+        - 2: hot
+
+        For Clarabel: does nothing
+
+        For OSQP:
+        - 0: cold
+        - 1: warm
+        - setting can not be changed after first QP solve, so this only works if nlp_solver_warm_start_first_qp is True.
+
         Default: 0
         """
         return self.__qp_solver_warm_start
@@ -1092,13 +1112,17 @@ class AcadosOcpOptions:
     def qp_solver_t0_init(self):
         """
         For HPIPM QP solver: Initialization scheme of lambda and t slacks within HPIPM.
-        0: initialize with sqrt(mu0)
-        1: initialize with 1.0
-        2: heuristic for primal feasibility
+        Complementarity slackness condition: lambda * t = mu0, mu0 settable via `mu0`.
+        Values:
+        - 0: initialize lambda = sqrt(mu0), t = sqrt(mu0)
+        - 1: initialize lambda = mu0, t = 1
+        - 2: heuristic for primal feasibility -> slacks init from constraint residuals (clipped with 0.1 from below), bounds and general constraints are adjusted such that soft constraints start feasible, multipliers are set as mu0/t (clipped with 0.1 from below)
 
         When using larger value for tau_min, it is beneficial to not use 2, as the initialization of (t, lambda) might be too far off from the central path and prevent convergence.
 
-        Type: int > 0
+        NOTE: Only used if qp_solver_warm_start > 1.
+
+        Type: int >= 0
         Default: 2
         """
         return self.__qp_solver_t0_init
@@ -2584,8 +2608,27 @@ class AcadosOcpQpOptions:
         """
         Controls the QP solver warm start level.
 
-        What warm/hot start means in detail is dependend on the QP solver being used.
-        0: no warm start; 1: warm start; 2: hot start.
+        What warm/hot start means in detail depends on the QP solver being used.
+        0: no warm start; 1: warm start; 2: hot start; 3: very hot start
+
+        For HPIPM:
+        - 0: primal variables set to 0, equality multipliers pi set to 0; for inequalities: t, lam set according to t0_init option.
+        - 1: primal guess is kept, equality multipliers pi set to 0; for inequalities: t, lam set according to t0_init option. NOTE: this is the same as 0, as acados resets the initial guess of primal variables to zero, as QPs have primal variables in delta space.
+        - 2: t and lam are clipped with 0.1 from below, otherwise QP initialization is exactly what is in qp_out before
+        - 3: QP initialization is exactly what is in qp_out before
+
+        For DAQP and qpOASES, as common in active-set solver literature.
+        - 0: cold
+        - 1: warm
+        - 2: hot
+
+        For Clarabel: does nothing
+
+        For OSQP:
+        - 0: cold
+        - 1: warm
+        - setting can not be changed after first QP solve.
+
         Default: 0
         """
         return self.__warm_start
@@ -2661,13 +2704,17 @@ class AcadosOcpQpOptions:
     def t0_init(self):
         """
         For HPIPM QP solver: Initialization scheme of lambda and t slacks within HPIPM.
-        0: initialize with sqrt(mu0)
-        1: initialize with 1.0
-        2: heuristic for primal feasibility
+        Complementarity slackness condition: lambda * t = mu0, mu0 settable via `mu0`.
+        Values:
+        - 0: initialize lambda = sqrt(mu0), t = sqrt(mu0)
+        - 1: initialize lambda = mu0, t = 1
+        - 2: heuristic for primal feasibility -> slacks init from constraint residuals (clipped with 0.1 from below), bounds and general constraints are adjusted such that soft constraints start feasible, multipliers are set as mu0/t (clipped with 0.1 from below)
 
         When using larger value for tau_min, it is beneficial to not use 2, as the initialization of (t, lambda) might be too far off from the central path and prevent convergence.
 
-        Type: int > 0
+        NOTE: Only used if qp_solver_warm_start > 1.
+
+        Type: int >= 0
         Default: 2
         """
         return self.__t0_init
